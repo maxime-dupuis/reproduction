@@ -1,4 +1,4 @@
-import { Entity, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
+import { Entity, EntityRepository, Loaded, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
 
 @Entity()
 class User {
@@ -20,6 +20,7 @@ class User {
 }
 
 let orm: MikroORM;
+let repository: EntityRepository<User>
 
 beforeAll(async () => {
   orm = await MikroORM.init({
@@ -35,17 +36,23 @@ afterAll(async () => {
   await orm.close(true);
 });
 
-test('basic CRUD example', async () => {
-  orm.em.create(User, { name: 'Foo', email: 'foo' });
-  await orm.em.flush();
-  orm.em.clear();
+beforeEach(async () => {
+  repository = orm.em.getRepository(User)
+  const user = repository.create({ name: 'Toto', email: 'toto@toto.com' })
+  await orm.em.persistAndFlush([user])
+})
 
-  const user = await orm.em.findOneOrFail(User, { email: 'foo' });
-  expect(user.name).toBe('Foo');
-  user.name = 'Bar';
-  orm.em.remove(user);
-  await orm.em.flush();
+test('partially loaded entity should only have the loaded fields', async () => {
+      const repository = orm.em.getRepository(User)
+      const user: Loaded<User, never, 'id' | 'name', never> = await repository.findOneOrFail({name: 'Toto'},{
+        fields: ['id', 'name'],
+      });
 
-  const count = await orm.em.count(User, { email: 'foo' });
-  expect(count).toBe(0);
+      expect(user.id).toBeDefined(); // OK
+      expect(user.name).toBeDefined(); // OK
+
+      expect('doesntExistEvenInFullyLoadedEntities' in user).toBeFalsy(); // OK
+      expect('email' in user).toBeTruthy(); // Should be falsy
+      expect(Object.hasOwn(user, 'email')).toBeTruthy(); // Should be falsy
+      //expect(user.email).toBeDefined(); // Doesn't compile, which is good as it guarantees type safety. OK
 });
