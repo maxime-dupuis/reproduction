@@ -53,7 +53,15 @@ test('partially loaded entity should only have the loaded fields', async () => {
       expect(user.name).toBeDefined(); // OK
 
       expect('doesntExistEvenInFullyLoadedEntities' in user).toBeFalsy(); // OK
+      
+      // Misleading
       expect('email' in user).toBeTruthy(); // Should be falsy
       expect(Object.hasOwn(user, 'email')).toBeTruthy(); // Should be falsy
-      //expect(user.email).toBeDefined(); // Doesn't compile, which is good as it guarantees type safety. OK
+  
+      // These give Typescript error: Property 'email' does not exist on type 'Loaded<User, never, "name" | "id", never>'.ts(2339)
+      // Could workaround and ignore them with @ts-expect-error, but not really user-friendly
+      // Either way, their results are misleading
+      expect(user.email).toBeDefined(); // Should be undefined
+      expect(user.email === undefined).toBeFalsy(); // Should be truthy
+      expect(typeof user.email === 'undefined').toBeFalsy(); // Should be truthy
 });
