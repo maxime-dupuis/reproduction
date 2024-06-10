@@ -37,10 +37,10 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  orm.em.clear()
   repository = orm.em.getRepository(User)
   const user = repository.create({ name: 'Toto', email: 'toto@toto.com' })
   await orm.em.persistAndFlush([user])
+  orm.em.clear()
 })
 
 test('partially loaded entity should only have the loaded fields', async () => {
@@ -58,10 +58,13 @@ test('partially loaded entity should only have the loaded fields', async () => {
       expect('email' in user).toBeTruthy(); // Should be falsy
       expect(Object.hasOwn(user, 'email')).toBeTruthy(); // Should be falsy
   
-      // These give Typescript error: Property 'email' does not exist on type 'Loaded<User, never, "name" | "id", never>'.ts(2339)
-      // Could workaround and ignore them with @ts-expect-error, but not really user-friendly
-      // Either way, their results are misleading
-      expect(user.email).toBeDefined(); // Should be undefined
-      expect(user.email === undefined).toBeFalsy(); // Should be truthy
-      expect(typeof user.email === 'undefined').toBeFalsy(); // Should be truthy
+      // These work!
+      // But give Typescript error: Property 'email' does not exist on type 'Loaded<User, never, "name" | "id", never>'.ts(2339)
+      // Not really user-friendly but we could workaround and ignore them with @ts-expect-error
+      // @ts-expect-error
+      expect(user.email).toBeUndefined(); // OK
+      // @ts-expect-error
+      expect(user.email === undefined).toBeTruthy(); // OK
+      // @ts-expect-error
+      expect(typeof user.email === 'undefined').toBeTruthy(); // OK
 });
