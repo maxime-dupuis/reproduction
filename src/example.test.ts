@@ -37,6 +37,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  orm.em.clear()
   repository = orm.em.getRepository(User)
   const user = repository.create({ name: 'Toto', email: 'toto@toto.com' })
   await orm.em.persistAndFlush([user])
